@@ -204,6 +204,198 @@ TEST_F(utglTF2ImportExport, importglTF2_KHR_materials_clearcoat) {
     VerifyClearCoatScene(scene);
 }
 
+static const aiMaterial *GetFirstMaterial(const aiScene *scene) {
+    EXPECT_NE(nullptr, scene);
+    if (scene == nullptr) {
+        return nullptr;
+    }
+    EXPECT_TRUE(scene->HasMaterials());
+    if (!scene->HasMaterials()) {
+        return nullptr;
+    }
+    return scene->mMaterials[0];
+}
+
+static void VerifyIridescenceScene(const aiScene *scene) {
+    const aiMaterial *material = GetFirstMaterial(scene);
+    ASSERT_NE(nullptr, material);
+
+    ai_real value(0.0f);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.8f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_IOR, value));
+    EXPECT_FLOAT_EQ(1.5f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_THICKNESS_MIN, value));
+    EXPECT_FLOAT_EQ(120.0f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_THICKNESS_MAX, value));
+    EXPECT_FLOAT_EQ(500.0f, value);
+
+    aiString path;
+    EXPECT_EQ(aiReturn_SUCCESS, material->GetTexture(AI_MATKEY_IRIDESCENCE_TEXTURE, &path));
+    EXPECT_STREQ("CesiumLogoFlat.png", path.C_Str());
+    EXPECT_EQ(aiReturn_SUCCESS, material->GetTexture(AI_MATKEY_IRIDESCENCE_THICKNESS_TEXTURE, &path));
+    EXPECT_STREQ("CesiumLogoFlat.png", path.C_Str());
+
+    // Texture UV sets must survive the import
+    int uvIndex(-1);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_UVWSRC(aiTextureType_IRIDESCENCE, 0), uvIndex));
+    EXPECT_EQ(0, uvIndex);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_UVWSRC(aiTextureType_IRIDESCENCE, 1), uvIndex));
+    EXPECT_EQ(1, uvIndex);
+}
+
+TEST_F(utglTF2ImportExport, importglTF2_KHR_materials_iridescence) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/IridescenceTest.gltf", aiProcess_ValidateDataStructure);
+    VerifyIridescenceScene(scene);
+}
+
+TEST_F(utglTF2ImportExport, importglTF2_KHR_materials_iridescence_defaults) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/IridescenceDefaultsTest.gltf", aiProcess_ValidateDataStructure);
+    const aiMaterial *material = GetFirstMaterial(scene);
+    ASSERT_NE(nullptr, material);
+
+    // Empty extension object: all factors must fall back to the spec defaults
+    ai_real value(-1.0f);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.0f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_IOR, value));
+    EXPECT_FLOAT_EQ(1.3f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_THICKNESS_MIN, value));
+    EXPECT_FLOAT_EQ(100.0f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_THICKNESS_MAX, value));
+    EXPECT_FLOAT_EQ(400.0f, value);
+
+    aiString path;
+    EXPECT_EQ(aiReturn_FAILURE, material->GetTexture(AI_MATKEY_IRIDESCENCE_TEXTURE, &path));
+    EXPECT_EQ(aiReturn_FAILURE, material->GetTexture(AI_MATKEY_IRIDESCENCE_THICKNESS_TEXTURE, &path));
+}
+
+static void VerifyDispersionScene(const aiScene *scene) {
+    const aiMaterial *material = GetFirstMaterial(scene);
+    ASSERT_NE(nullptr, material);
+
+    ai_real value(0.0f);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DISPERSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.05f, value);
+
+    // KHR_materials_transmission coexists in the same material
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_TRANSMISSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(1.0f, value);
+}
+
+TEST_F(utglTF2ImportExport, importglTF2_KHR_materials_dispersion) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/DispersionTest.gltf", aiProcess_ValidateDataStructure);
+    VerifyDispersionScene(scene);
+}
+
+static void VerifyDiffuseTransmissionScene(const aiScene *scene) {
+    const aiMaterial *material = GetFirstMaterial(scene);
+    ASSERT_NE(nullptr, material);
+
+    ai_real value(0.0f);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DIFFUSE_TRANSMISSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.6f, value);
+
+    aiColor4D color;
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_FACTOR, color));
+    EXPECT_FLOAT_EQ(0.8f, color.r);
+    EXPECT_FLOAT_EQ(0.5f, color.g);
+    EXPECT_FLOAT_EQ(0.2f, color.b);
+
+    aiString path;
+    EXPECT_EQ(aiReturn_SUCCESS, material->GetTexture(AI_MATKEY_DIFFUSE_TRANSMISSION_TEXTURE, &path));
+    EXPECT_STREQ("CesiumLogoFlat.png", path.C_Str());
+    EXPECT_EQ(aiReturn_SUCCESS, material->GetTexture(AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_TEXTURE, &path));
+    EXPECT_STREQ("CesiumLogoFlat.png", path.C_Str());
+
+    int uvIndex(-1);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_UVWSRC(aiTextureType_DIFFUSE_TRANSMISSION, 0), uvIndex));
+    EXPECT_EQ(0, uvIndex);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_UVWSRC(aiTextureType_DIFFUSE_TRANSMISSION, 1), uvIndex));
+    EXPECT_EQ(1, uvIndex);
+}
+
+TEST_F(utglTF2ImportExport, importglTF2_KHR_materials_diffuse_transmission) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/DiffuseTransmissionTest.gltf", aiProcess_ValidateDataStructure);
+    VerifyDiffuseTransmissionScene(scene);
+}
+
+TEST_F(utglTF2ImportExport, importglTF2_KHR_materials_combinedExtensions) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/CombinedExtensionsTest.gltf", aiProcess_ValidateDataStructure);
+    const aiMaterial *material = GetFirstMaterial(scene);
+    ASSERT_NE(nullptr, material);
+
+    // All extensions must coexist without overwriting each other
+    ai_real value(0.0f);
+    aiColor4D color;
+
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_SHEEN_ROUGHNESS_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.25f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_SHEEN_COLOR_FACTOR, color));
+    EXPECT_FLOAT_EQ(0.5f, color.r);
+
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_CLEARCOAT_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.7f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_CLEARCOAT_ROUGHNESS_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.1f, value);
+
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_ANISOTROPY_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.9f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_ANISOTROPY_ROTATION, value));
+    EXPECT_FLOAT_EQ(0.5f, value);
+
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.8f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_IOR, value));
+    EXPECT_FLOAT_EQ(1.4f, value);
+
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DISPERSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.03f, value);
+
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DIFFUSE_TRANSMISSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.4f, value);
+}
+
+TEST_F(utglTF2ImportExport, importglTF2_KHR_materials_outOfRange) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/OutOfRangeTest.gltf", aiProcess_ValidateDataStructure);
+    const aiMaterial *material = GetFirstMaterial(scene);
+    ASSERT_NE(nullptr, material);
+
+    // Out-of-range values must be clamped to the valid ranges defined by the specs
+    ai_real value(0.0f);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_FACTOR, value));
+    EXPECT_FLOAT_EQ(1.0f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_IOR, value));
+    EXPECT_FLOAT_EQ(1.3f, value); // ior < 1 falls back to the spec default
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_THICKNESS_MIN, value));
+    EXPECT_FLOAT_EQ(100.0f, value); // min/max swapped
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_THICKNESS_MAX, value));
+    EXPECT_FLOAT_EQ(900.0f, value);
+
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DISPERSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.0f, value);
+
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DIFFUSE_TRANSMISSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(1.0f, value);
+}
+
+TEST_F(utglTF2ImportExport, importglTF2_KHR_materials_undeclaredExtension) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/UndeclaredExtensionTest.gltf", aiProcess_ValidateDataStructure);
+    const aiMaterial *material = GetFirstMaterial(scene);
+    ASSERT_NE(nullptr, material);
+
+    // The extension object is present but not declared in extensionsUsed: it must be ignored
+    ai_real value(0.0f);
+    EXPECT_EQ(aiReturn_FAILURE, material->Get(AI_MATKEY_IRIDESCENCE_FACTOR, value));
+}
+
 #ifndef ASSIMP_BUILD_NO_EXPORT
 
 TEST_F(utglTF2ImportExport, exportExternalBasisUniversalTexture) {
@@ -337,6 +529,220 @@ TEST_F(utglTF2ImportExport, importglTF2EmbeddedAndExportToOBJ) {
             aiProcess_ValidateDataStructure);
     EXPECT_NE(nullptr, scene);
     EXPECT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "obj", ASSIMP_TEST_MODELS_DIR "/glTF2/BoxTextured-glTF-Embedded/BoxTextured_out.obj"));
+}
+
+static bool ExportToGltfAndParse(const aiScene *scene, const std::string &output, rapidjson::Document &document) {
+    Assimp::Exporter exporter;
+    if (exporter.Export(scene, "gltf2", output.c_str()) != aiReturn_SUCCESS) {
+        return false;
+    }
+
+    std::ifstream input(output);
+    if (!input.good()) {
+        return false;
+    }
+    std::stringstream contents;
+    contents << input.rdbuf();
+    document.Parse(contents.str().c_str());
+    return !document.HasParseError();
+}
+
+static void RemoveGltfOutput(const std::string &output) {
+    ::remove(output.c_str());
+    const std::string binary = output.substr(0, output.size() - 5) + ".bin";
+    ::remove(binary.c_str());
+}
+
+static bool GltfExtensionsUsedContains(const rapidjson::Document &document, const char *extension) {
+    if (!document.HasMember("extensionsUsed")) {
+        return false;
+    }
+    const auto &used = document["extensionsUsed"];
+    for (rapidjson::SizeType i = 0; i < used.Size(); ++i) {
+        if (used[i].IsString() && used[i].GetString() == std::string(extension)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+TEST_F(utglTF2ImportExport, importglTF2AndExport_KHR_materials_iridescence) {
+    const std::string outFile = std::string(ASSIMP_TEST_MODELS_DIR) + "/glTF2/MaterialAdvancedExtensions-glTF/IridescenceTest_out.glb";
+    {
+        Assimp::Importer importer;
+        Assimp::Exporter exporter;
+        const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/IridescenceTest.gltf", aiProcess_ValidateDataStructure);
+        ASSERT_NE(nullptr, scene);
+        EXPECT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "glb2", outFile.c_str()));
+    }
+
+    // And re-import
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(outFile.c_str(), aiProcess_ValidateDataStructure);
+    VerifyIridescenceScene(scene);
+    ::remove(outFile.c_str());
+}
+
+TEST_F(utglTF2ImportExport, importglTF2AndExport_KHR_materials_dispersion) {
+    const std::string outFile = std::string(ASSIMP_TEST_MODELS_DIR) + "/glTF2/MaterialAdvancedExtensions-glTF/DispersionTest_out.glb";
+    {
+        Assimp::Importer importer;
+        Assimp::Exporter exporter;
+        const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/DispersionTest.gltf", aiProcess_ValidateDataStructure);
+        ASSERT_NE(nullptr, scene);
+        EXPECT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "glb2", outFile.c_str()));
+    }
+
+    // And re-import
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(outFile.c_str(), aiProcess_ValidateDataStructure);
+    VerifyDispersionScene(scene);
+    ::remove(outFile.c_str());
+}
+
+TEST_F(utglTF2ImportExport, importglTF2AndExport_KHR_materials_diffuse_transmission) {
+    const std::string outFile = std::string(ASSIMP_TEST_MODELS_DIR) + "/glTF2/MaterialAdvancedExtensions-glTF/DiffuseTransmissionTest_out.glb";
+    {
+        Assimp::Importer importer;
+        Assimp::Exporter exporter;
+        const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/DiffuseTransmissionTest.gltf", aiProcess_ValidateDataStructure);
+        ASSERT_NE(nullptr, scene);
+        EXPECT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "glb2", outFile.c_str()));
+    }
+
+    // And re-import
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(outFile.c_str(), aiProcess_ValidateDataStructure);
+    VerifyDiffuseTransmissionScene(scene);
+    ::remove(outFile.c_str());
+}
+
+TEST_F(utglTF2ImportExport, importglTF2AndExport_KHR_materials_combinedExtensions) {
+    const std::string outFile = std::string(ASSIMP_TEST_MODELS_DIR) + "/glTF2/MaterialAdvancedExtensions-glTF/CombinedExtensionsTest_out.glb";
+    {
+        Assimp::Importer importer;
+        Assimp::Exporter exporter;
+        const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/CombinedExtensionsTest.gltf", aiProcess_ValidateDataStructure);
+        ASSERT_NE(nullptr, scene);
+        EXPECT_EQ(aiReturn_SUCCESS, exporter.Export(scene, "glb2", outFile.c_str()));
+    }
+
+    // Re-import and verify that all extensions survived the round-trip
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(outFile.c_str(), aiProcess_ValidateDataStructure);
+    const aiMaterial *material = GetFirstMaterial(scene);
+    ASSERT_NE(nullptr, material);
+
+    ai_real value(0.0f);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_SHEEN_ROUGHNESS_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.25f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_CLEARCOAT_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.7f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_ANISOTROPY_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.9f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.8f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_IRIDESCENCE_IOR, value));
+    EXPECT_FLOAT_EQ(1.4f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DISPERSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.03f, value);
+    EXPECT_EQ(aiReturn_SUCCESS, material->Get(AI_MATKEY_DIFFUSE_TRANSMISSION_FACTOR, value));
+    EXPECT_FLOAT_EQ(0.4f, value);
+    ::remove(outFile.c_str());
+}
+
+TEST_F(utglTF2ImportExport, exportglTF2_KHR_materials_iridescence_declared) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/IridescenceTest.gltf", aiProcess_ValidateDataStructure);
+    ASSERT_NE(nullptr, scene);
+
+    const std::string output = std::string(ASSIMP_TEST_MODELS_DIR) + "/glTF2/MaterialAdvancedExtensions-glTF/iridescence_declared_out.gltf";
+    rapidjson::Document document;
+    ASSERT_TRUE(ExportToGltfAndParse(scene, output, document));
+
+    EXPECT_TRUE(GltfExtensionsUsedContains(document, "KHR_materials_iridescence"));
+    ASSERT_TRUE(document.HasMember("materials"));
+    ASSERT_GT(document["materials"].Size(), 0u);
+    const auto &material = document["materials"][0];
+    ASSERT_TRUE(material.HasMember("extensions"));
+    ASSERT_TRUE(material["extensions"].HasMember("KHR_materials_iridescence"));
+    const auto &iridescence = material["extensions"]["KHR_materials_iridescence"];
+    EXPECT_FLOAT_EQ(0.8f, iridescence["iridescenceFactor"].GetFloat());
+    EXPECT_FLOAT_EQ(1.5f, iridescence["iridescenceIor"].GetFloat());
+    EXPECT_FLOAT_EQ(120.0f, iridescence["iridescenceThicknessMinimum"].GetFloat());
+    EXPECT_FLOAT_EQ(500.0f, iridescence["iridescenceThicknessMaximum"].GetFloat());
+    EXPECT_TRUE(iridescence.HasMember("iridescenceTexture"));
+    EXPECT_TRUE(iridescence.HasMember("iridescenceThicknessTexture"));
+
+    RemoveGltfOutput(output);
+}
+
+TEST_F(utglTF2ImportExport, exportglTF2_KHR_materials_defaultsNotDeclared) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/IridescenceDefaultsTest.gltf", aiProcess_ValidateDataStructure);
+    ASSERT_NE(nullptr, scene);
+
+    // All parameters hold default values (factor 0 disables the effect): the extension must not be declared
+    const std::string output = std::string(ASSIMP_TEST_MODELS_DIR) + "/glTF2/MaterialAdvancedExtensions-glTF/defaults_out.gltf";
+    rapidjson::Document document;
+    ASSERT_TRUE(ExportToGltfAndParse(scene, output, document));
+
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_iridescence"));
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_dispersion"));
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_diffuse_transmission"));
+    ASSERT_TRUE(document.HasMember("materials"));
+    ASSERT_GT(document["materials"].Size(), 0u);
+    if (document["materials"][0].HasMember("extensions")) {
+        const auto &extensions = document["materials"][0]["extensions"];
+        EXPECT_FALSE(extensions.HasMember("KHR_materials_iridescence"));
+        EXPECT_FALSE(extensions.HasMember("KHR_materials_dispersion"));
+        EXPECT_FALSE(extensions.HasMember("KHR_materials_diffuse_transmission"));
+    }
+
+    RemoveGltfOutput(output);
+}
+
+TEST_F(utglTF2ImportExport, exportglTF2_KHR_materials_unlitMutex) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/MaterialAdvancedExtensions-glTF/UnlitMutexTest.gltf", aiProcess_ValidateDataStructure);
+    ASSERT_NE(nullptr, scene);
+
+    // KHR_materials_unlit is mutually exclusive with the PBR extensions: they must not be exported
+    const std::string output = std::string(ASSIMP_TEST_MODELS_DIR) + "/glTF2/MaterialAdvancedExtensions-glTF/unlit_mutex_out.gltf";
+    rapidjson::Document document;
+    ASSERT_TRUE(ExportToGltfAndParse(scene, output, document));
+
+    EXPECT_TRUE(GltfExtensionsUsedContains(document, "KHR_materials_unlit"));
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_iridescence"));
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_dispersion"));
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_diffuse_transmission"));
+    ASSERT_TRUE(document.HasMember("materials"));
+    ASSERT_GT(document["materials"].Size(), 0u);
+    ASSERT_TRUE(document["materials"][0].HasMember("extensions"));
+    const auto &extensions = document["materials"][0]["extensions"];
+    EXPECT_TRUE(extensions.HasMember("KHR_materials_unlit"));
+    EXPECT_FALSE(extensions.HasMember("KHR_materials_iridescence"));
+    EXPECT_FALSE(extensions.HasMember("KHR_materials_dispersion"));
+    EXPECT_FALSE(extensions.HasMember("KHR_materials_diffuse_transmission"));
+
+    RemoveGltfOutput(output);
+}
+
+TEST_F(utglTF2ImportExport, exportglTF2_KHR_materials_noExtensionsWhenUnused) {
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(ASSIMP_TEST_MODELS_DIR "/glTF2/BoxTextured-glTF/BoxTextured.gltf", aiProcess_ValidateDataStructure);
+    ASSERT_NE(nullptr, scene);
+
+    // Assets not using the extensions must produce unchanged output
+    const std::string output = std::string(ASSIMP_TEST_MODELS_DIR) + "/glTF2/MaterialAdvancedExtensions-glTF/box_textured_out.gltf";
+    rapidjson::Document document;
+    ASSERT_TRUE(ExportToGltfAndParse(scene, output, document));
+
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_iridescence"));
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_dispersion"));
+    EXPECT_FALSE(GltfExtensionsUsedContains(document, "KHR_materials_diffuse_transmission"));
+
+    RemoveGltfOutput(output);
 }
 
 #endif // ASSIMP_BUILD_NO_EXPORT

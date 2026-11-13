@@ -390,6 +390,52 @@ static aiMaterial *ImportMaterial(std::vector<int> &embeddedTexIdxs, Asset &r, M
             SetMaterialTextureProperty(embeddedTexIdxs, r, anisotropy.anisotropyTexture, aimat, AI_MATKEY_ANISOTROPY_TEXTURE);
         }
 
+        // KHR_materials_iridescence
+        if (mat.materialIridescence.isPresent) {
+            MaterialIridescence &iridescence = mat.materialIridescence.value;
+
+            // Safe fallback for out-of-range values: clamp to the valid ranges defined by the spec
+            iridescence.iridescenceFactor = std::min(std::max(iridescence.iridescenceFactor, 0.0f), 1.0f);
+            if (iridescence.iridescenceIor < 1.0f) {
+                iridescence.iridescenceIor = 1.3f; // spec default
+            }
+            iridescence.iridescenceThicknessMinimum = std::max(iridescence.iridescenceThicknessMinimum, 0.0f);
+            iridescence.iridescenceThicknessMaximum = std::max(iridescence.iridescenceThicknessMaximum, 0.0f);
+            if (iridescence.iridescenceThicknessMinimum > iridescence.iridescenceThicknessMaximum) {
+                std::swap(iridescence.iridescenceThicknessMinimum, iridescence.iridescenceThicknessMaximum);
+            }
+
+            aimat->AddProperty(&iridescence.iridescenceFactor, 1, AI_MATKEY_IRIDESCENCE_FACTOR);
+            SetMaterialTextureProperty(embeddedTexIdxs, r, iridescence.iridescenceTexture, aimat, AI_MATKEY_IRIDESCENCE_TEXTURE);
+            aimat->AddProperty(&iridescence.iridescenceIor, 1, AI_MATKEY_IRIDESCENCE_IOR);
+            aimat->AddProperty(&iridescence.iridescenceThicknessMinimum, 1, AI_MATKEY_IRIDESCENCE_THICKNESS_MIN);
+            aimat->AddProperty(&iridescence.iridescenceThicknessMaximum, 1, AI_MATKEY_IRIDESCENCE_THICKNESS_MAX);
+            SetMaterialTextureProperty(embeddedTexIdxs, r, iridescence.iridescenceThicknessTexture, aimat, AI_MATKEY_IRIDESCENCE_THICKNESS_TEXTURE);
+        }
+
+        // KHR_materials_dispersion
+        if (mat.materialDispersion.isPresent) {
+            MaterialDispersion &dispersion = mat.materialDispersion.value;
+
+            // Safe fallback for out-of-range values: dispersion must be non-negative
+            dispersion.dispersion = std::max(dispersion.dispersion, 0.0f);
+
+            aimat->AddProperty(&dispersion.dispersion, 1, AI_MATKEY_DISPERSION_FACTOR);
+        }
+
+        // KHR_materials_diffuse_transmission
+        if (mat.materialDiffuseTransmission.isPresent) {
+            MaterialDiffuseTransmission &diffuseTransmission = mat.materialDiffuseTransmission.value;
+
+            // Safe fallback for out-of-range values: clamp the factor to [0, 1]
+            diffuseTransmission.diffuseTransmissionFactor = std::min(std::max(diffuseTransmission.diffuseTransmissionFactor, 0.0f), 1.0f);
+
+            aimat->AddProperty(&diffuseTransmission.diffuseTransmissionFactor, 1, AI_MATKEY_DIFFUSE_TRANSMISSION_FACTOR);
+            SetMaterialTextureProperty(embeddedTexIdxs, r, diffuseTransmission.diffuseTransmissionTexture, aimat, AI_MATKEY_DIFFUSE_TRANSMISSION_TEXTURE);
+            SetMaterialColorProperty(r, diffuseTransmission.diffuseTransmissionColorFactor, aimat, AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_FACTOR);
+            SetMaterialTextureProperty(embeddedTexIdxs, r, diffuseTransmission.diffuseTransmissionColorTexture, aimat, AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_TEXTURE);
+        }
+
         return aimat;
     } catch (...) {
         delete aimat;

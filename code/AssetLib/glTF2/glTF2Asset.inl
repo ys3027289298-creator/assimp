@@ -1484,6 +1484,44 @@ inline void Material::Read(Value &material, Asset &r) {
             }
         }
 
+        if (r.extensionsUsed.KHR_materials_iridescence) {
+            if (Value *curMaterialIridescence = FindObject(*extensions, "KHR_materials_iridescence")) {
+                MaterialIridescence iridescence;
+
+                ReadMember(*curMaterialIridescence, "iridescenceFactor", iridescence.iridescenceFactor);
+                ReadTextureProperty(r, *curMaterialIridescence, "iridescenceTexture", iridescence.iridescenceTexture);
+                ReadMember(*curMaterialIridescence, "iridescenceIor", iridescence.iridescenceIor);
+                ReadMember(*curMaterialIridescence, "iridescenceThicknessMinimum", iridescence.iridescenceThicknessMinimum);
+                ReadMember(*curMaterialIridescence, "iridescenceThicknessMaximum", iridescence.iridescenceThicknessMaximum);
+                ReadTextureProperty(r, *curMaterialIridescence, "iridescenceThicknessTexture", iridescence.iridescenceThicknessTexture);
+
+                this->materialIridescence = Nullable<MaterialIridescence>(iridescence);
+            }
+        }
+
+        if (r.extensionsUsed.KHR_materials_dispersion) {
+            if (Value *curMaterialDispersion = FindObject(*extensions, "KHR_materials_dispersion")) {
+                MaterialDispersion dispersion;
+
+                ReadMember(*curMaterialDispersion, "dispersion", dispersion.dispersion);
+
+                this->materialDispersion = Nullable<MaterialDispersion>(dispersion);
+            }
+        }
+
+        if (r.extensionsUsed.KHR_materials_diffuse_transmission) {
+            if (Value *curMaterialDiffuseTransmission = FindObject(*extensions, "KHR_materials_diffuse_transmission")) {
+                MaterialDiffuseTransmission diffuseTransmission;
+
+                ReadMember(*curMaterialDiffuseTransmission, "diffuseTransmissionFactor", diffuseTransmission.diffuseTransmissionFactor);
+                ReadTextureProperty(r, *curMaterialDiffuseTransmission, "diffuseTransmissionTexture", diffuseTransmission.diffuseTransmissionTexture);
+                ReadMember(*curMaterialDiffuseTransmission, "diffuseTransmissionColorFactor", diffuseTransmission.diffuseTransmissionColorFactor);
+                ReadTextureProperty(r, *curMaterialDiffuseTransmission, "diffuseTransmissionColorTexture", diffuseTransmission.diffuseTransmissionColorTexture);
+
+                this->materialDiffuseTransmission = Nullable<MaterialDiffuseTransmission>(diffuseTransmission);
+            }
+        }
+
         unlit = nullptr != FindObject(*extensions, "KHR_materials_unlit");
     }
 }
@@ -1541,6 +1579,25 @@ inline void MaterialAnisotropy::SetDefaults() {
     //KHR_materials_anisotropy properties
     anisotropyStrength = 0.f;
     anisotropyRotation = 0.f;
+}
+
+inline void MaterialIridescence::SetDefaults() {
+    //KHR_materials_iridescence properties
+    iridescenceFactor = 0.f;
+    iridescenceIor = 1.3f;
+    iridescenceThicknessMinimum = 100.f;
+    iridescenceThicknessMaximum = 400.f;
+}
+
+inline void MaterialDispersion::SetDefaults() {
+    //KHR_materials_dispersion properties
+    dispersion = 0.f;
+}
+
+inline void MaterialDiffuseTransmission::SetDefaults() {
+    //KHR_materials_diffuse_transmission properties
+    diffuseTransmissionFactor = 0.f;
+    SetVector(diffuseTransmissionColorFactor, defaultDiffuseTransmissionColorFactor);
 }
 
 inline void Mesh::Read(Value &pJSON_Object, Asset &pAsset_Root) {
@@ -2274,6 +2331,9 @@ inline void Asset::ReadExtensionsUsed(Document &doc) {
     CHECK_EXT(KHR_materials_ior);
     CHECK_EXT(KHR_materials_emissive_strength);
     CHECK_EXT(KHR_materials_anisotropy);
+    CHECK_EXT(KHR_materials_iridescence);
+    CHECK_EXT(KHR_materials_dispersion);
+    CHECK_EXT(KHR_materials_diffuse_transmission);
     CHECK_EXT(KHR_draco_mesh_compression);
     CHECK_EXT(KHR_texture_basisu);
     CHECK_EXT(EXT_texture_webp);

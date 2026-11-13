@@ -102,6 +102,10 @@ const char *aiTextureTypeToString(aiTextureType in) {
         return "Anisotropy";
     case aiTextureType_GLTF_METALLIC_ROUGHNESS:
         return "glTFMetallicRoughness";
+    case aiTextureType_IRIDESCENCE:
+        return "Iridescence";
+    case aiTextureType_DIFFUSE_TRANSMISSION:
+        return "DiffuseTransmission";
     case aiTextureType_UNKNOWN:
         return "Unknown";
     default:

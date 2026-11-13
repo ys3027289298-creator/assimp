@@ -574,6 +574,70 @@ namespace glTF2 {
             }
         }
 
+        if (m.materialIridescence.isPresent) {
+            Value materialIridescence(rapidjson::Type::kObjectType);
+
+            MaterialIridescence &iridescence = m.materialIridescence.value;
+
+            if (iridescence.iridescenceFactor != 0.f) {
+                WriteFloat(materialIridescence, iridescence.iridescenceFactor, "iridescenceFactor", w.mAl);
+            }
+
+            WriteTex(materialIridescence, iridescence.iridescenceTexture, "iridescenceTexture", w.mAl);
+
+            if (iridescence.iridescenceIor != 1.3f) {
+                WriteFloat(materialIridescence, iridescence.iridescenceIor, "iridescenceIor", w.mAl);
+            }
+
+            if (iridescence.iridescenceThicknessMinimum != 100.f) {
+                WriteFloat(materialIridescence, iridescence.iridescenceThicknessMinimum, "iridescenceThicknessMinimum", w.mAl);
+            }
+
+            if (iridescence.iridescenceThicknessMaximum != 400.f) {
+                WriteFloat(materialIridescence, iridescence.iridescenceThicknessMaximum, "iridescenceThicknessMaximum", w.mAl);
+            }
+
+            WriteTex(materialIridescence, iridescence.iridescenceThicknessTexture, "iridescenceThicknessTexture", w.mAl);
+
+            if (!materialIridescence.ObjectEmpty()) {
+                exts.AddMember("KHR_materials_iridescence", materialIridescence, w.mAl);
+            }
+        }
+
+        if (m.materialDispersion.isPresent) {
+            Value materialDispersion(rapidjson::Type::kObjectType);
+
+            MaterialDispersion &dispersion = m.materialDispersion.value;
+
+            if (dispersion.dispersion != 0.f) {
+                WriteFloat(materialDispersion, dispersion.dispersion, "dispersion", w.mAl);
+            }
+
+            if (!materialDispersion.ObjectEmpty()) {
+                exts.AddMember("KHR_materials_dispersion", materialDispersion, w.mAl);
+            }
+        }
+
+        if (m.materialDiffuseTransmission.isPresent) {
+            Value materialDiffuseTransmission(rapidjson::Type::kObjectType);
+
+            MaterialDiffuseTransmission &diffuseTransmission = m.materialDiffuseTransmission.value;
+
+            if (diffuseTransmission.diffuseTransmissionFactor != 0.f) {
+                WriteFloat(materialDiffuseTransmission, diffuseTransmission.diffuseTransmissionFactor, "diffuseTransmissionFactor", w.mAl);
+            }
+
+            WriteTex(materialDiffuseTransmission, diffuseTransmission.diffuseTransmissionTexture, "diffuseTransmissionTexture", w.mAl);
+
+            WriteVec(materialDiffuseTransmission, diffuseTransmission.diffuseTransmissionColorFactor, "diffuseTransmissionColorFactor", defaultDiffuseTransmissionColorFactor, w.mAl);
+
+            WriteTex(materialDiffuseTransmission, diffuseTransmission.diffuseTransmissionColorTexture, "diffuseTransmissionColorTexture", w.mAl);
+
+            if (!materialDiffuseTransmission.ObjectEmpty()) {
+                exts.AddMember("KHR_materials_diffuse_transmission", materialDiffuseTransmission, w.mAl);
+            }
+        }
+
         if (!exts.ObjectEmpty()) {
             obj.AddMember("extensions", exts, w.mAl);
         }
@@ -1059,6 +1123,18 @@ namespace glTF2 {
 
             if (this->mAsset.extensionsUsed.KHR_materials_anisotropy) {
                 exts.PushBack(StringRef("KHR_materials_anisotropy"), mAl);
+            }
+
+            if (this->mAsset.extensionsUsed.KHR_materials_iridescence) {
+                exts.PushBack(StringRef("KHR_materials_iridescence"), mAl);
+            }
+
+            if (this->mAsset.extensionsUsed.KHR_materials_dispersion) {
+                exts.PushBack(StringRef("KHR_materials_dispersion"), mAl);
+            }
+
+            if (this->mAsset.extensionsUsed.KHR_materials_diffuse_transmission) {
+                exts.PushBack(StringRef("KHR_materials_diffuse_transmission"), mAl);
             }
 
             if (this->mAsset.extensionsUsed.FB_ngon_encoding) {

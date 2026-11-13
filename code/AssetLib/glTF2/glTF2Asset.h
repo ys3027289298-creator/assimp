@@ -54,6 +54,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *   KHR_materials_ior full
  *   KHR_materials_emissive_strength full
  *   KHR_materials_anisotropy full
+ *   KHR_materials_iridescence full
+ *   KHR_materials_dispersion full
+ *   KHR_materials_diffuse_transmission full
  */
 #ifndef GLTF2ASSET_H_INC
 #define GLTF2ASSET_H_INC
@@ -715,6 +718,7 @@ const vec3 defaultSpecularFactor = { 1, 1, 1 };
 const vec3 defaultSpecularColorFactor = { 1, 1, 1 };
 const vec3 defaultSheenFactor = { 0, 0, 0 };
 const vec3 defaultAttenuationColor = { 1, 1, 1 };
+const vec3 defaultDiffuseTransmissionColorFactor = { 1, 1, 1 };
 
 struct TextureInfo {
     Ref<Texture> texture;
@@ -822,6 +826,35 @@ struct MaterialAnisotropy {
     void SetDefaults();
 };
 
+struct MaterialIridescence {
+    float iridescenceFactor = 0.f;
+    TextureInfo iridescenceTexture;
+    float iridescenceIor = 0.f;
+    float iridescenceThicknessMinimum = 0.f;
+    float iridescenceThicknessMaximum = 0.f;
+    TextureInfo iridescenceThicknessTexture;
+
+    MaterialIridescence() { SetDefaults(); }
+    void SetDefaults();
+};
+
+struct MaterialDispersion {
+    float dispersion = 0.f;
+
+    MaterialDispersion() { SetDefaults(); }
+    void SetDefaults();
+};
+
+struct MaterialDiffuseTransmission {
+    float diffuseTransmissionFactor = 0.f;
+    TextureInfo diffuseTransmissionTexture;
+    vec3 diffuseTransmissionColorFactor;
+    TextureInfo diffuseTransmissionColorTexture;
+
+    MaterialDiffuseTransmission() { SetDefaults(); }
+    void SetDefaults();
+};
+
 //! The material appearance of a primitive.
 struct Material : public Object {
     //PBR metallic roughness properties
@@ -862,6 +895,15 @@ struct Material : public Object {
 
     //extension: KHR_materials_anisotropy
     Nullable<MaterialAnisotropy> materialAnisotropy;
+
+    //extension: KHR_materials_iridescence
+    Nullable<MaterialIridescence> materialIridescence;
+
+    //extension: KHR_materials_dispersion
+    Nullable<MaterialDispersion> materialDispersion;
+
+    //extension: KHR_materials_diffuse_transmission
+    Nullable<MaterialDiffuseTransmission> materialDiffuseTransmission;
 
     //extension: KHR_materials_unlit
     bool unlit;
@@ -1135,6 +1177,9 @@ public:
         bool KHR_materials_ior{false};
         bool KHR_materials_emissive_strength{false};
         bool KHR_materials_anisotropy{false};
+        bool KHR_materials_iridescence{false};
+        bool KHR_materials_dispersion{false};
+        bool KHR_materials_diffuse_transmission{false};
         bool KHR_draco_mesh_compression{false};
         bool FB_ngon_encoding{false};
         bool KHR_texture_basisu{false};

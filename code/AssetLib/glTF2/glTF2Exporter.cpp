@@ -833,6 +833,53 @@ bool glTF2Exporter::GetMatAnisotropy(const aiMaterial &mat, glTF2::MaterialAniso
     return true;
 }
 
+bool glTF2Exporter::GetMatIridescence(const aiMaterial &mat, glTF2::MaterialIridescence &iridescence) {
+    bool result = mat.Get(AI_MATKEY_IRIDESCENCE_FACTOR, iridescence.iridescenceFactor) == aiReturn_SUCCESS;
+
+    GetMatTex(mat, iridescence.iridescenceTexture, AI_MATKEY_IRIDESCENCE_TEXTURE);
+    GetMatTex(mat, iridescence.iridescenceThicknessTexture, AI_MATKEY_IRIDESCENCE_THICKNESS_TEXTURE);
+
+    result = result || iridescence.iridescenceTexture.texture || iridescence.iridescenceThicknessTexture.texture;
+
+    // Iridescence factor of zero without an iridescence texture disables the effect, so do not export
+    if (!result || (iridescence.iridescenceFactor == 0.0f && !iridescence.iridescenceTexture.texture)) {
+        return false;
+    }
+
+    mat.Get(AI_MATKEY_IRIDESCENCE_IOR, iridescence.iridescenceIor);
+    mat.Get(AI_MATKEY_IRIDESCENCE_THICKNESS_MIN, iridescence.iridescenceThicknessMinimum);
+    mat.Get(AI_MATKEY_IRIDESCENCE_THICKNESS_MAX, iridescence.iridescenceThicknessMaximum);
+
+    return true;
+}
+
+bool glTF2Exporter::GetMatDispersion(const aiMaterial &mat, glTF2::MaterialDispersion &dispersion) {
+    if (mat.Get(AI_MATKEY_DISPERSION_FACTOR, dispersion.dispersion) != aiReturn_SUCCESS) {
+        return false;
+    }
+
+    // Dispersion of zero disables the effect, so do not export
+    return dispersion.dispersion != 0.0f;
+}
+
+bool glTF2Exporter::GetMatDiffuseTransmission(const aiMaterial &mat, glTF2::MaterialDiffuseTransmission &diffuseTransmission) {
+    bool result = mat.Get(AI_MATKEY_DIFFUSE_TRANSMISSION_FACTOR, diffuseTransmission.diffuseTransmissionFactor) == aiReturn_SUCCESS;
+
+    GetMatTex(mat, diffuseTransmission.diffuseTransmissionTexture, AI_MATKEY_DIFFUSE_TRANSMISSION_TEXTURE);
+
+    result = result || diffuseTransmission.diffuseTransmissionTexture.texture;
+
+    // Diffuse transmission factor of zero without a texture disables the effect, so do not export
+    if (!result || (diffuseTransmission.diffuseTransmissionFactor == 0.0f && !diffuseTransmission.diffuseTransmissionTexture.texture)) {
+        return false;
+    }
+
+    GetMatColor(mat, diffuseTransmission.diffuseTransmissionColorFactor, AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_FACTOR);
+    GetMatTex(mat, diffuseTransmission.diffuseTransmissionColorTexture, AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_TEXTURE);
+
+    return true;
+}
+
 void glTF2Exporter::ExportMaterials() {
     aiString aiName;
     for (unsigned int i = 0; i < mScene->mNumMaterials; ++i) {
@@ -990,6 +1037,24 @@ void glTF2Exporter::ExportMaterials() {
                 if (GetMatAnisotropy(mat, anisotropy)) {
                     mAsset->extensionsUsed.KHR_materials_anisotropy = true;
                     m->materialAnisotropy = Nullable<MaterialAnisotropy>(anisotropy);
+                }
+
+                MaterialIridescence iridescence;
+                if (GetMatIridescence(mat, iridescence)) {
+                    mAsset->extensionsUsed.KHR_materials_iridescence = true;
+                    m->materialIridescence = Nullable<MaterialIridescence>(iridescence);
+                }
+
+                MaterialDispersion dispersion;
+                if (GetMatDispersion(mat, dispersion)) {
+                    mAsset->extensionsUsed.KHR_materials_dispersion = true;
+                    m->materialDispersion = Nullable<MaterialDispersion>(dispersion);
+                }
+
+                MaterialDiffuseTransmission diffuseTransmission;
+                if (GetMatDiffuseTransmission(mat, diffuseTransmission)) {
+                    mAsset->extensionsUsed.KHR_materials_diffuse_transmission = true;
+                    m->materialDiffuseTransmission = Nullable<MaterialDiffuseTransmission>(diffuseTransmission);
                 }
             }
         }

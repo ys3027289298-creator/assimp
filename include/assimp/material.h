@@ -351,12 +351,26 @@ enum aiTextureType {
      */
     aiTextureType_GLTF_METALLIC_ROUGHNESS = 27,
 
+    /** Iridescence
+    * Simulates a thin-film interference effect on the surface
+    * https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_iridescence
+    * Index 0: iridescence factor texture, Index 1: iridescence thickness texture
+     */
+    aiTextureType_IRIDESCENCE = 28,
+
+    /** Diffuse transmission
+    * Simulates diffuse light transmitted through the surface
+    * https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_diffuse_transmission
+    * Index 0: diffuse transmission factor texture, Index 1: diffuse transmission color texture
+     */
+    aiTextureType_DIFFUSE_TRANSMISSION = 29,
+
 #ifndef SWIG
     _aiTextureType_Force32Bit = INT_MAX
 #endif
 };
 
-#define AI_TEXTURE_TYPE_MAX aiTextureType_GLTF_METALLIC_ROUGHNESS
+#define AI_TEXTURE_TYPE_MAX aiTextureType_DIFFUSE_TRANSMISSION
 
 // -------------------------------------------------------------------------------
 /**
@@ -1094,6 +1108,45 @@ extern "C" {
 // ----------
 #define AI_MATKEY_ANISOTROPY_ROTATION "$mat.anisotropyRotation", 0, 0
 #define AI_MATKEY_ANISOTROPY_TEXTURE aiTextureType_ANISOTROPY, 0
+
+// Iridescence
+// -----------
+// https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_iridescence
+// Iridescence (thin-film interference) intensity. 0.0 = disabled (default), 1.0 = full effect
+#define AI_MATKEY_IRIDESCENCE_FACTOR "$mat.iridescence.factor", 0, 0
+// Index of refraction of the thin-film layer. Default 1.3
+#define AI_MATKEY_IRIDESCENCE_IOR "$mat.iridescence.ior", 0, 0
+// Minimum thickness of the thin-film layer in nanometers. Default 100.0
+#define AI_MATKEY_IRIDESCENCE_THICKNESS_MIN "$mat.iridescence.thicknessMinimum", 0, 0
+// Maximum thickness of the thin-film layer in nanometers. Default 400.0
+#define AI_MATKEY_IRIDESCENCE_THICKNESS_MAX "$mat.iridescence.thicknessMaximum", 0, 0
+// Texture defining the iridescence intensity (red channel).
+// Multiplied by AI_MATKEY_IRIDESCENCE_FACTOR
+#define AI_MATKEY_IRIDESCENCE_TEXTURE aiTextureType_IRIDESCENCE, 0
+// Texture defining the thin-film thickness (green channel), remapped to
+// [AI_MATKEY_IRIDESCENCE_THICKNESS_MIN, AI_MATKEY_IRIDESCENCE_THICKNESS_MAX]
+#define AI_MATKEY_IRIDESCENCE_THICKNESS_TEXTURE aiTextureType_IRIDESCENCE, 1
+
+// Dispersion
+// ----------
+// https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_dispersion
+// Strength of the dispersion effect (chromatic aberration of transmitted light).
+// 0.0 = disabled (default). Requires KHR_materials_transmission to have a visible effect.
+#define AI_MATKEY_DISPERSION_FACTOR "$mat.dispersion.factor", 0, 0
+
+// Diffuse Transmission
+// --------------------
+// https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_diffuse_transmission
+// Percentage of diffusely transmitted light. 0.0 = none (default), 1.0 = fully transmitted
+#define AI_MATKEY_DIFFUSE_TRANSMISSION_FACTOR "$mat.diffuseTransmission.factor", 0, 0
+// Color of the diffusely transmitted light. Default {1,1,1}
+#define AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_FACTOR "$clr.diffuseTransmission.factor", 0, 0
+// Texture defining the percentage of diffusely transmitted light (alpha channel).
+// Multiplied by AI_MATKEY_DIFFUSE_TRANSMISSION_FACTOR
+#define AI_MATKEY_DIFFUSE_TRANSMISSION_TEXTURE aiTextureType_DIFFUSE_TRANSMISSION, 0
+// Texture defining the color of diffusely transmitted light (rgb channels).
+// Multiplied by AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_FACTOR
+#define AI_MATKEY_DIFFUSE_TRANSMISSION_COLOR_TEXTURE aiTextureType_DIFFUSE_TRANSMISSION, 1
 
 // ---------------------------------------------------------------------------
 // Pure key names for all texture-related properties
